@@ -1,5 +1,6 @@
 // -std=c++17 or /std:c++17 (auto variable)
 #pragma once
+#include <cstddef>
 
 namespace scm {
     #define typ typename
@@ -59,13 +60,16 @@ namespace scm {
         template<template<typ> typ F, typ L> struct typeFilter:
             typeFilter_h<F, L, F<typ L::first>::value> {};
         */
-        
-        template<bool keep> struct filter_f;
-        template<> struct filter_f<true> { template<typ I, typ RR> struct fctr : cons<I, RR> {}; };
-        template<> struct filter_f<false> { template<typ I, typ RR> struct fctr : RR {}; };
+        // using functors
+        template<bool keep> struct keep_or;
+        template<> struct keep_or<true> { template<typ I, typ RR> struct fctr : cons<I, RR> {}; };
+        template<> struct keep_or<false> { template<typ I, typ RR> struct fctr : RR {}; };
+        template<template<typ> typ F> struct filter_f {
+            template<typ I, typ RR> using fctr = typ keep_or<F<I>::value>::template fctr<I, RR>;
+        };
         template<template<typ> typ F, typ L> struct typeFilter
-            : typeFoldr<filter_f< (F<typ L::first>::value) >::template fctr, null, L> {};
-        
+            : typeFoldr<filter_f<F>::template fctr, null, L> {};
+
         template<template<typ> typ F, typ L> struct typeMap
             : cons<typ F<typ L::first>::type, typeMap<F, typ L::rest>> {};
         template<template<typ> typ F> struct typeMap<F, null> : null {};
