@@ -1,4 +1,7 @@
 // -std=c++17 or /std:c++17 (inline variable, fold expression)
+//   lisp list (cons cells) in tmp
+//
+//   (c) cos in April 2020
 #pragma once
 #include <iostream>
 

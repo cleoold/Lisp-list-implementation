@@ -1,3 +1,7 @@
+//   lisp list (cons cells) in tmp
+//
+//   (c) cos in April 2020
+// some predefined functors
 #pragma once
 #include "cons.hh"
 
@@ -6,7 +10,7 @@ namespace functors {
     #define typ typename
     // fold arithmetic ops
     #define DEF_BIOP(NAME, OP) \
-    template<typ I1, typ I2> struct NAME : scm::v_item<(I1::value OP I2::value)> {};
+        template<typ I1, typ I2> struct NAME : scm::v_item<(I1::value OP I2::value)> {};
     DEF_BIOP(bin_add, +)
     DEF_BIOP(bin_sub, -)
     DEF_BIOP(bin_mul, *)
@@ -20,25 +24,26 @@ namespace functors {
     DEF_BIOP(bin_rshift, >>)
     #undef DEF_BIOP
 
-    // transforms
+    // define transforms as you like
     template<typ I> struct identity : I {};
     #define DEF_TRANSFORM(NAME, EXPR) \
-    template<typ I> struct NAME : scm::v_item<EXPR> {};
+        template<typ I> struct NAME : scm::v_item<EXPR> {};
     DEF_TRANSFORM(keep, true)
     DEF_TRANSFORM(iseven, ((I::value & 1) != 1))
     DEF_TRANSFORM(isodd, ((I::value & 1) == 1))
     DEF_TRANSFORM(ispowerof2, (I::value && !(I::value&(I::value-1))))
-    DEF_TRANSFORM(negate, -I::value)
-    DEF_TRANSFORM(lnot, !I::value)
+    DEF_TRANSFORM(squared, (I::value * I::value))
+    DEF_TRANSFORM(negate, (-I::value))
+    DEF_TRANSFORM(lnot, (!I::value))
     DEF_TRANSFORM(abs, (I::value > 0 ? I::value : -I::value))
     DEF_TRANSFORM(get_first_v, (I::value_type::first::value))
     DEF_TRANSFORM(get_rest_vt, (I::value_type::rest))
     #undef DEF_TRANSFORM
 
     #define DEF_OP_BY(NAME, OP) \
-    template<auto t> struct NAME { template<typ I> struct fctr : scm::v_item<(I::value OP t)> {}; };
+        template<auto t> struct NAME { template<typ I> struct fctr : scm::v_item<(I::value OP t)> {}; };
     #define DEF_OP_TO(NAME, OP) \
-    template<auto t> struct NAME { template<typ I> struct fctr : scm::v_item<(t OP I::value)> {}; };
+        template<auto t> struct NAME { template<typ I> struct fctr : scm::v_item<(t OP I::value)> {}; };
     DEF_OP_BY(equal_to, ==)
     DEF_OP_BY(nequal_to, !=)
     DEF_OP_BY(greater_than, >)
@@ -65,25 +70,38 @@ namespace functors {
     #undef DEF_OP_BY
     #undef DEF_OP_TO
 
-    // composing transforms
-    template<template<typ> typ F1, template<typ> typ F2> struct f_and {
-        template<typ I> struct fctr : scm::item<bool, (F1<I>::value && F2<I>::value)> {};
-    };
-    template<template<typ> typ F1, template<typ> typ F2> struct f_or {
-        template<typ I> struct fctr : scm::item<bool, (F1<I>::value || F2<I>::value)> {};
-    };
-    template<template<typ> typ F1> struct f_not {
-        template<typ I> struct fctr : scm::item<bool, (!F1<I>::value)> {};
-    };
+    // composing transforms (functor compose), by using a binary op in between
+    // eg functor1 && functor2 ...
+    // since my cons list is not templated, i cannot wrap a functor in an
+    // scm::item or insert it into an scm::list to use higher order functions
+    // to compose them. sigh! but they behave the same using macro
+    #define DEF_COMPOSE_OP(NAME, OP) \
+        template<template<typ> typ...> struct NAME; \
+        template<template<typ> typ F1, template<typ> typ F2> struct NAME<F1, F2> { \
+            template<typ I> struct fctr : scm::v_item<(F1<I>::value OP F2<I>::value)> {}; \
+        }; \
+        template<template<typ> typ F1, template<typ> typ ...Fn> struct NAME<F1, Fn...> \
+            : NAME<F1, NAME<Fn...>::template fctr> {};
+    DEF_COMPOSE_OP(fc_add, +)
+    DEF_COMPOSE_OP(fc_sub, -)
+    DEF_COMPOSE_OP(fc_mul, *)
+    DEF_COMPOSE_OP(fc_div, /)
+    DEF_COMPOSE_OP(fc_land, &&)
+    DEF_COMPOSE_OP(fc_lor, ||)
+    DEF_COMPOSE_OP(fc_band, &)
+    DEF_COMPOSE_OP(fc_bor, |)
+    DEF_COMPOSE_OP(fc_bxor, ^)
+    DEF_COMPOSE_OP(fc_lshift, <<)
+    DEF_COMPOSE_OP(fc_rshift, >>)
+    #undef DEF_COMPOSE_OP
 
-    template<template<typ> typ F1, template<typ> typ F2> struct compose2 {
+    // composing transforms, by x => F1(F2(F3(x))) etc
+    template<template<typ> typ...> struct compose;
+    template<template<typ> typ F1, template<typ> typ F2> struct compose<F1, F2> {
         template<typ I> struct fctr : F1<F2<I>> {};
     };
-    // this is honestly a cons list, though!
-    template<template<typ> typ...> struct compose;
-    template<template<typ> typ I> struct compose<I> : compose2<I, identity> {};
-    template<template<typ> typ I, template<typ> typ ...In> struct compose<I, In...>
-        : compose2<I, compose<In...>::template fctr> {};
+    template<template<typ> typ F1, template<typ> typ ...Fn> struct compose<F1, Fn...>
+        : compose<F1, compose<Fn...>::template fctr> {};
 
     #undef typ
 }
