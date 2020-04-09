@@ -134,8 +134,8 @@ namespace scm {
     template<template<typ> typ F, typ L> using typeFilter = typ _impl::typeFilter<F, L>::type;
     // map function
     template<template<typ> typ F, typ L> using typeMap = typ _impl::typeMap<F, L>::type;
-    // build list of length n, with indices 0, 1, 2, ..., n, which is transformed using F
-    // warning: the indices 0,1, ..., n used as inputs of F are `item<size_t, n>`
+    // build list of length n, with indices 0, 1, 2, ..., n-1, which is transformed using F
+    // warning: the indices 0,1, ..., n-1 used as inputs of F are `item<size_t, index>`
     template<size_t n, template<typ> typ F> using build_list = typ _impl::build_list<n, F>::type;
 
     #undef typ
