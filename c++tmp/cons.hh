@@ -41,9 +41,8 @@ namespace scm {
         template<typ I> struct list<I> : cons<I, null> {};
         template<typ I, typ ...In> struct list<I, In...> : cons<I, typ list<In...>::type> {};
 
-        template<typ L, typ RL> struct reverse_acc : reverse_acc<typ L::rest, cons<typ L::first, RL>> {};
-        template<typ RL> struct reverse_acc<null, RL> : RL {};
-        template<typ L> struct reverse : reverse_acc<L, null> {};
+        template<typ L, typ RL = null> struct reverse : reverse<typ L::rest, cons<typ L::first, RL>> {};
+        template<typ RL> struct reverse<null, RL> : RL {};
 
         template<typ L1, typ L2> struct append : cons<typ L1::first, typ append<typ L1::rest, L2>::type> {};
         template<typ L2> struct append<null, L2> : L2 {};
@@ -91,6 +90,11 @@ namespace scm {
         template<template<typ> typ F, typ L> struct typeMap
             : cons<typ F<typ L::first>::type, typ typeMap<F, typ L::rest>::type> {};
         template<template<typ> typ F> struct typeMap<F, null> : null {};
+
+        template<size_t n, template<typ> typ F, typ AL = null> struct build_list
+            : build_list<n-1, F, cons<typ F<item<size_t, n-1>>::type, AL>> {};
+        template<template<typ> typ F, typ AL> struct build_list<0, F, AL>
+            : AL {};
     }
 
     template<typ F, typ R> struct cons {
@@ -130,6 +134,9 @@ namespace scm {
     template<template<typ> typ F, typ L> using typeFilter = typ _impl::typeFilter<F, L>::type;
     // map function
     template<template<typ> typ F, typ L> using typeMap = typ _impl::typeMap<F, L>::type;
+    // build list of length n, with indices 0, 1, 2, ..., n, which is transformed using F
+    // warning: the indices 0,1, ..., n used as inputs of F are `item<size_t, n>`
+    template<size_t n, template<typ> typ F> using build_list = typ _impl::build_list<n, F>::type;
 
     #undef typ
 }

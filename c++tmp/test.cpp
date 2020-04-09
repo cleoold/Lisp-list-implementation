@@ -88,6 +88,11 @@ int main(void) {
     // (see implementation)
     static_assert(std::is_same_v<typeFoldl<cons, null, c>, reverse<c>>, "");
 
+    // build an index list relying on the identity map that maps index to index itself
+    // (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+    using d = build_list<10, functors::identity>;
+    printcons<d>("d");
+
     // can concat a, b and c, then print the result in a nicer format
     // (1, -4, (6, (8), 7), 2, (), (1, 4), (1, 7), (8, int*), 1, 9, 20, 3, -2, 0)
     using a_b_c = append<append<a, b>, c>;

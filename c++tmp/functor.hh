@@ -46,6 +46,7 @@ namespace functors {
     DEF_TRANSFORM(get_rest_vt, (I::value_type::rest))
     #undef DEF_TRANSFORM
 
+    template<typ t> struct become { template<typ I> struct fctr : t {}; };
     #define DEF_CURRIED_EXPR(NAME, EXPR) \
         template<auto t> struct NAME { template<typ I> struct fctr : scm::v_item<EXPR> {}; };
     #define DEF_OP_BY(NAME, OP) \
@@ -72,7 +73,6 @@ namespace functors {
     DEF_OP_BY(rshift_by, >>)
     DEF_CURRIED_EXPR(max_by, (I::value > t ? I::value : t))
     DEF_CURRIED_EXPR(min_by, (I::value < t ? I::value : t))
-    DEF_CURRIED_EXPR(become, (t))
     // param OP item
     DEF_OP_TO(sub_to, -)
     DEF_OP_TO(div_to, /)
