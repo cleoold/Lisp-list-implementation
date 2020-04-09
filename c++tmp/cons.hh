@@ -10,13 +10,13 @@ namespace scm {
 
     // node of cons list
     template<typ T, T...> struct item;
-    // item consisting an integral value
+    // item consisting of an integral value
     template <typ T, T n> struct item<T, n> {
         using type = item;
         using value_type = T;
         static constexpr T value = n;
     };
-    // item consisting an abitarary type
+    // item consisting of an arbitrary type
     template<typ T> struct item<T> {
         using type = item;
         using value_type = T;

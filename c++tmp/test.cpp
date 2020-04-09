@@ -51,6 +51,8 @@ int main(void) {
     static_assert(std::is_same_v<typeFoldr<cons, null, c>, c>, "");
     // compute their sum using foldr
     static_assert(typeFoldr<functors::bin_add, v_item<0>, c>::value == 31, "");
+    // compute their max value using reduce
+    static_assert(typeAccumulate<functors::bin_max, c::first, c>::value == 20, "");
 
     // for c, entries greater than 0 and odd
     // (1, 9, 3)
@@ -93,5 +95,4 @@ int main(void) {
     // from to the construction of my cons list, one can consider the following...
     // template<class I1, class I2> using append_f = item<append<class I1::value_type, class I2::value_type>>;
     // using a_b_c = typeFoldr<append_f, item<null>, list<item<a>, item<b>, item<c>>>::value_type;
-    // try.
 }

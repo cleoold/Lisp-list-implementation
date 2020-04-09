@@ -9,8 +9,10 @@ namespace functors {
     // I1, ... are packed scm::item or v_item
     #define typ typename
     // fold arithmetic ops
+    #define DEF_BIEXPR(NAME, EXPR) \
+        template<typ I1, typ I2> struct NAME : scm::v_item<EXPR> {};
     #define DEF_BIOP(NAME, OP) \
-        template<typ I1, typ I2> struct NAME : scm::v_item<(I1::value OP I2::value)> {};
+        DEF_BIEXPR(NAME, (I1::value OP I2::value))
     DEF_BIOP(bin_add, +)
     DEF_BIOP(bin_sub, -)
     DEF_BIOP(bin_mul, *)
@@ -22,7 +24,10 @@ namespace functors {
     DEF_BIOP(bin_bxor, ^)
     DEF_BIOP(bin_lshift, <<)
     DEF_BIOP(bin_rshift, >>)
+    DEF_BIEXPR(bin_max, (I1::value > I2::value ? I1::value : I2::value))
+    DEF_BIEXPR(bin_min, (I1::value < I2::value ? I1::value : I2::value))
     #undef DEF_BIOP
+    #undef DEF_BIEXPR
 
     // define transforms as you like
     template<typ I> struct identity : I {};
@@ -35,15 +40,18 @@ namespace functors {
     DEF_TRANSFORM(squared, (I::value * I::value))
     DEF_TRANSFORM(negate, (-I::value))
     DEF_TRANSFORM(lnot, (!I::value))
+    DEF_TRANSFORM(bnot, (~I::value))
     DEF_TRANSFORM(abs, (I::value > 0 ? I::value : -I::value))
     DEF_TRANSFORM(get_first_v, (I::value_type::first::value))
     DEF_TRANSFORM(get_rest_vt, (I::value_type::rest))
     #undef DEF_TRANSFORM
 
+    #define DEF_CURRIED_EXPR(NAME, EXPR) \
+        template<auto t> struct NAME { template<typ I> struct fctr : scm::v_item<EXPR> {}; };
     #define DEF_OP_BY(NAME, OP) \
-        template<auto t> struct NAME { template<typ I> struct fctr : scm::v_item<(I::value OP t)> {}; };
+        DEF_CURRIED_EXPR(NAME, (I::value OP t))
     #define DEF_OP_TO(NAME, OP) \
-        template<auto t> struct NAME { template<typ I> struct fctr : scm::v_item<(t OP I::value)> {}; };
+        DEF_CURRIED_EXPR(NAME, (t OP I::value))
     DEF_OP_BY(equal_to, ==)
     DEF_OP_BY(nequal_to, !=)
     DEF_OP_BY(greater_than, >)
@@ -62,6 +70,9 @@ namespace functors {
     DEF_OP_BY(bxor_by, ^)
     DEF_OP_BY(lshift_by, <<)
     DEF_OP_BY(rshift_by, >>)
+    DEF_CURRIED_EXPR(max_by, (I::value > t ? I::value : t))
+    DEF_CURRIED_EXPR(min_by, (I::value < t ? I::value : t))
+    DEF_CURRIED_EXPR(become, (t))
     // param OP item
     DEF_OP_TO(sub_to, -)
     DEF_OP_TO(div_to, /)
@@ -69,19 +80,22 @@ namespace functors {
     DEF_OP_TO(rshift_to, >>)
     #undef DEF_OP_BY
     #undef DEF_OP_TO
+    #undef DEF_CURRIED_EXPR
 
     // composing transforms (functor compose), by using a binary op in between
     // eg functor1 && functor2 ...
     // since my cons list is not templated, i cannot wrap a functor in an
     // scm::item or insert it into an scm::list to use higher order functions
     // to compose them. sigh! but they behave the same using macro
-    #define DEF_COMPOSE_OP(NAME, OP) \
+    #define DEF_COMPOSE_EXPR(NAME, EXPR) \
         template<template<typ> typ...> struct NAME; \
         template<template<typ> typ F1, template<typ> typ F2> struct NAME<F1, F2> { \
-            template<typ I> struct fctr : scm::v_item<(F1<I>::value OP F2<I>::value)> {}; \
+            template<typ I> struct fctr : scm::v_item<EXPR> {}; \
         }; \
         template<template<typ> typ F1, template<typ> typ ...Fn> struct NAME<F1, Fn...> \
             : NAME<F1, NAME<Fn...>::template fctr> {};
+    #define DEF_COMPOSE_OP(NAME, OP) \
+        DEF_COMPOSE_EXPR(NAME, (F1<I>::value OP F2<I>::value))
     DEF_COMPOSE_OP(fc_add, +)
     DEF_COMPOSE_OP(fc_sub, -)
     DEF_COMPOSE_OP(fc_mul, *)
@@ -93,7 +107,10 @@ namespace functors {
     DEF_COMPOSE_OP(fc_bxor, ^)
     DEF_COMPOSE_OP(fc_lshift, <<)
     DEF_COMPOSE_OP(fc_rshift, >>)
+    DEF_COMPOSE_EXPR(fc_max, (F1<I>::value > F2<I>::value ? F1<I>::value : F2<I>::value))
+    DEF_COMPOSE_EXPR(fc_min, (F1<I>::value < F2<I>::value ? F1<I>::value : F2<I>::value))
     #undef DEF_COMPOSE_OP
+    #undef DEF_COMPOSE_EXPR
 
     // composing transforms, by x => F1(F2(F3(x))) etc
     template<template<typ> typ...> struct compose;
