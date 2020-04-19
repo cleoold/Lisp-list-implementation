@@ -88,12 +88,11 @@ namespace functors {
     // scm::item or insert it into an scm::list to use higher order functions
     // to compose them. sigh! but they behave the same using macro
     #define DEF_COMPOSE_EXPR(NAME, EXPR) \
-        template<template<typ> typ...> struct NAME; \
+        template<template<typ> typ F1, template<typ> typ ...Fn> struct NAME \
+            : NAME<F1, NAME<Fn...>::template fctr> {}; \
         template<template<typ> typ F1, template<typ> typ F2> struct NAME<F1, F2> { \
             template<typ I> struct fctr : scm::v_item<EXPR> {}; \
-        }; \
-        template<template<typ> typ F1, template<typ> typ ...Fn> struct NAME<F1, Fn...> \
-            : NAME<F1, NAME<Fn...>::template fctr> {};
+        };
     #define DEF_COMPOSE_OP(NAME, OP) \
         DEF_COMPOSE_EXPR(NAME, (F1<I>::value OP F2<I>::value))
     DEF_COMPOSE_OP(fc_add, +)
@@ -113,12 +112,11 @@ namespace functors {
     #undef DEF_COMPOSE_EXPR
 
     // composing transforms, by x => F1(F2(F3(x))) etc
-    template<template<typ> typ...> struct compose;
+    template<template<typ> typ F1, template<typ> typ ...Fn> struct compose
+        : compose<F1, compose<Fn...>::template fctr> {};
     template<template<typ> typ F1, template<typ> typ F2> struct compose<F1, F2> {
         template<typ I> struct fctr : F1<F2<I>> {};
     };
-    template<template<typ> typ F1, template<typ> typ ...Fn> struct compose<F1, Fn...>
-        : compose<F1, compose<Fn...>::template fctr> {};
 
     #undef typ
 }
